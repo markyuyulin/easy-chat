@@ -7,6 +7,11 @@ func New(code int, msg string) error {
 	return errors.New(code, msg)
 }
 
+// 自定义的错误信息输出
+func NewMsg(msg string) error {
+	return errors.New(SERVER_COMMON_ERROR, msg)
+}
+
 func NewMsgErr(msg string) error {
 	return errors.New(SERVER_COMMON_ERROR, msg)
 }
