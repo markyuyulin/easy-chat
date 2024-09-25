@@ -20,6 +20,7 @@ type (
 )
 
 // NewGroupsModel returns a model for the database table.
+
 func NewGroupsModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Option) GroupsModel {
 	return &customGroupsModel{
 		defaultGroupsModel: newGroupsModel(conn, c, opts...),

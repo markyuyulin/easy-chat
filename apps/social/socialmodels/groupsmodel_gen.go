@@ -18,16 +18,20 @@ import (
 var (
 	groupsFieldNames          = builder.RawFieldNames(&Groups{})
 	groupsRows                = strings.Join(groupsFieldNames, ",")
-	groupsRowsExpectAutoSet   = strings.Join(stringx.Remove(groupsFieldNames, "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
-	groupsRowsWithPlaceHolder = strings.Join(stringx.Remove(groupsFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
+	//groupsRowsExpectAutoSet   = strings.Join(stringx.Remove(groupsFieldNames, "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
+	//groupsRowsWithPlaceHolder = strings.Join(stringx.Remove(groupsFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
+	groupsRowsExpectAutoSet   = strings.Join(stringx.Remove(groupsFieldNames, "`create_time`", "`update_time`", "`create_at`", "`update_at`"), ",")
+	groupsRowsWithPlaceHolder = strings.Join(stringx.Remove(groupsFieldNames, "`id`", "`create_time`", "`update_time`", "`create_at`", "`update_at`"), "=?,") + "=?"
 
 	cacheGroupsIdPrefix = "cache:groups:id:"
 )
 
 type (
 	groupsModel interface {
-		Insert(ctx context.Context, data *Groups) (sql.Result, error)
+		Trans(ctx context.Context, fn func(context.Context, sqlx.Session) error) error
+		Insert(ctx context.Context, session sqlx.Session, data *Groups) (sql.Result, error)
 		FindOne(ctx context.Context, id string) (*Groups, error)
+		ListByGroupIds(ctx context.Context, ids []string) ([]*Groups, error)
 		Update(ctx context.Context, data *Groups) error
 		Delete(ctx context.Context, id string) error
 	}
@@ -44,7 +48,7 @@ type (
 		Status          sql.NullInt64  `db:"status"`
 		CreatorUid      string         `db:"creator_uid"`
 		GroupType       int64          `db:"group_type"`
-		IsVerify        bool           `db:"is_verify"`
+		IsVerify        bool           `db:"is_verify"`			// 进群是否需要管理员同意
 		Notification    sql.NullString `db:"notification"`
 		NotificationUid sql.NullString `db:"notification_uid"`
 		CreatedAt       sql.NullTime   `db:"created_at"`
@@ -59,6 +63,78 @@ func newGroupsModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Option) 
 	}
 }
 
+//func (m *defaultGroupsModel) Delete(ctx context.Context, id string) error {
+//	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, id)
+//	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+//		query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
+//		return conn.ExecCtx(ctx, query, id)
+//	}, groupsIdKey)
+//	return err
+//}
+//
+//func (m *defaultGroupsModel) FindOne(ctx context.Context, id string) (*Groups, error) {
+//	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, id)
+//	var resp Groups
+//	err := m.QueryRowCtx(ctx, &resp, groupsIdKey, func(ctx context.Context, conn sqlx.SqlConn, v any) error {
+//		query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", groupsRows, m.table)
+//		return conn.QueryRowCtx(ctx, v, query, id)
+//	})
+//	switch err {
+//	case nil:
+//		return &resp, nil
+//	case sqlc.ErrNotFound:
+//		return nil, ErrNotFound
+//	default:
+//		return nil, err
+//	}
+//}
+//
+//func (m *defaultGroupsModel) Insert(ctx context.Context, data *Groups) (sql.Result, error) {
+//	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, data.Id)
+//	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+//		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, groupsRowsExpectAutoSet)
+//		return conn.ExecCtx(ctx, query, data.Id, data.Name, data.Icon, data.Status, data.CreatorUid, data.GroupType, data.IsVerify, data.Notification, data.NotificationUid)
+//	}, groupsIdKey)
+//	return ret, err
+//}
+//
+//func (m *defaultGroupsModel) Update(ctx context.Context, data *Groups) error {
+//	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, data.Id)
+//	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+//		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, groupsRowsWithPlaceHolder)
+//		return conn.ExecCtx(ctx, query, data.Name, data.Icon, data.Status, data.CreatorUid, data.GroupType, data.IsVerify, data.Notification, data.NotificationUid, data.Id)
+//	}, groupsIdKey)
+//	return err
+//}
+//
+//func (m *defaultGroupsModel) formatPrimary(primary any) string {
+//	return fmt.Sprintf("%s%v", cacheGroupsIdPrefix, primary)
+//}
+//
+//func (m *defaultGroupsModel) queryPrimary(ctx context.Context, conn sqlx.SqlConn, v, primary any) error {
+//	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", groupsRows, m.table)
+//	return conn.QueryRowCtx(ctx, v, query, primary)
+//}
+//
+//func (m *defaultGroupsModel) tableName() string {
+//	return m.table
+//}
+
+
+
+//func newGroupsModel(conn sqlx.SqlConn, c cache.CacheConf) *defaultGroupsModel {
+//	return &defaultGroupsModel{
+//		CachedConn: sqlc.NewConn(conn, c),
+//		table:      "`groups`",
+//	}
+//}
+
+func (m *defaultGroupsModel) Trans(ctx context.Context, fn func(context.Context, sqlx.Session) error) error {
+	return m.TransactCtx(ctx, func(ctx context.Context, session sqlx.Session) error {
+		return fn(ctx, session)
+	})
+}
+
 func (m *defaultGroupsModel) Delete(ctx context.Context, id string) error {
 	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, id)
 	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
@@ -71,7 +147,7 @@ func (m *defaultGroupsModel) Delete(ctx context.Context, id string) error {
 func (m *defaultGroupsModel) FindOne(ctx context.Context, id string) (*Groups, error) {
 	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, id)
 	var resp Groups
-	err := m.QueryRowCtx(ctx, &resp, groupsIdKey, func(ctx context.Context, conn sqlx.SqlConn, v any) error {
+	err := m.QueryRowCtx(ctx, &resp, groupsIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
 		query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", groupsRows, m.table)
 		return conn.QueryRowCtx(ctx, v, query, id)
 	})
@@ -85,29 +161,45 @@ func (m *defaultGroupsModel) FindOne(ctx context.Context, id string) (*Groups, e
 	}
 }
 
-func (m *defaultGroupsModel) Insert(ctx context.Context, data *Groups) (sql.Result, error) {
+func (m *defaultGroupsModel) Insert(ctx context.Context, session sqlx.Session, data *Groups) (sql.Result, error) {
 	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, data.Id)
 	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
-		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, groupsRowsExpectAutoSet)
-		return conn.ExecCtx(ctx, query, data.Id, data.Name, data.Icon, data.Status, data.CreatorUid, data.GroupType, data.IsVerify, data.Notification, data.NotificationUid)
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, groupsRowsExpectAutoSet)
+		return session.ExecCtx(ctx, query, data.Id, data.Name, data.Icon, data.Status, data.CreatorUid, data.GroupType, data.IsVerify, data.Notification, data.NotificationUid, data.CreatedAt, data.UpdatedAt)
 	}, groupsIdKey)
 	return ret, err
+}
+
+func (m *defaultGroupsModel) ListByGroupIds(ctx context.Context, ids []string) ([]*Groups, error) {
+	query := fmt.Sprintf("select %s from %s where `id` in (?)", groupsRows, m.table)
+
+	var resp []*Groups
+
+	idStr := strings.Join(ids, "','")
+	err := m.QueryRowsNoCacheCtx(ctx, &resp, query, idStr)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return nil, err
+	}
 }
 
 func (m *defaultGroupsModel) Update(ctx context.Context, data *Groups) error {
 	groupsIdKey := fmt.Sprintf("%s%v", cacheGroupsIdPrefix, data.Id)
 	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, groupsRowsWithPlaceHolder)
-		return conn.ExecCtx(ctx, query, data.Name, data.Icon, data.Status, data.CreatorUid, data.GroupType, data.IsVerify, data.Notification, data.NotificationUid, data.Id)
+		return conn.ExecCtx(ctx, query, data.Name, data.Icon, data.Status, data.CreatorUid, data.GroupType, data.IsVerify, data.Notification, data.NotificationUid, data.CreatedAt, data.UpdatedAt, data.Id)
 	}, groupsIdKey)
 	return err
 }
 
-func (m *defaultGroupsModel) formatPrimary(primary any) string {
+func (m *defaultGroupsModel) formatPrimary(primary interface{}) string {
 	return fmt.Sprintf("%s%v", cacheGroupsIdPrefix, primary)
 }
 
-func (m *defaultGroupsModel) queryPrimary(ctx context.Context, conn sqlx.SqlConn, v, primary any) error {
+func (m *defaultGroupsModel) queryPrimary(ctx context.Context, conn sqlx.SqlConn, v, primary interface{}) error {
 	query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", groupsRows, m.table)
 	return conn.QueryRowCtx(ctx, v, query, primary)
 }

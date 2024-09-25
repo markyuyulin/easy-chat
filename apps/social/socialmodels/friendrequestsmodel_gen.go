@@ -33,6 +33,8 @@ type (
 		Update(ctx context.Context, session sqlx.Session, data *FriendRequests) error
 		Delete(ctx context.Context, id uint64) error
 		Trans(ctx context.Context, fn func(ctx context.Context, session sqlx.Session) error) error
+		ListNoHandler(ctx context.Context, userId string) ([]*FriendRequests, error)
+
 	}
 
 	defaultFriendRequestsModel struct {
@@ -102,6 +104,20 @@ func (m *defaultFriendRequestsModel) FindByReqUidAndUserId(ctx context.Context, 
 
 }
 
+
+func (m *defaultFriendRequestsModel) ListNoHandler(ctx context.Context, userId string) ([]*FriendRequests, error) {
+	query := fmt.Sprintf("select %s from %s where `handle_result` = 1 and `user_id` = ?", friendRequestsRows, m.table)
+
+	var resp []*FriendRequests
+	err := m.QueryRowsNoCacheCtx(ctx, &resp, query, userId)
+
+	switch err {
+	case nil:
+		return resp, nil
+	default:
+		return nil, err
+	}
+}
 
 func (m *defaultFriendRequestsModel) Trans(ctx context.Context, fn func(ctx context.Context,
 	session sqlx.Session) error) error {

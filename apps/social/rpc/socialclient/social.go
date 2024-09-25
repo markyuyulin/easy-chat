@@ -44,7 +44,6 @@ type (
 		FriendPutInHandle(ctx context.Context, in *FriendPutInHandleReq, opts ...grpc.CallOption) (*FriendPutInHandleResp, error)
 		FriendPutInList(ctx context.Context, in *FriendPutInListReq, opts ...grpc.CallOption) (*FriendPutInListResp, error)
 		FriendList(ctx context.Context, in *FriendListReq, opts ...grpc.CallOption) (*FriendListResp, error)
-		// 群要求
 		GroupCreate(ctx context.Context, in *GroupCreateReq, opts ...grpc.CallOption) (*GroupCreateResp, error)
 		GroupPutin(ctx context.Context, in *GroupPutinReq, opts ...grpc.CallOption) (*GroupPutinResp, error)
 		GroupPutinList(ctx context.Context, in *GroupPutinListReq, opts ...grpc.CallOption) (*GroupPutinListResp, error)
@@ -84,7 +83,6 @@ func (m *defaultSocial) FriendList(ctx context.Context, in *FriendListReq, opts 
 	return client.FriendList(ctx, in, opts...)
 }
 
-// 群要求
 func (m *defaultSocial) GroupCreate(ctx context.Context, in *GroupCreateReq, opts ...grpc.CallOption) (*GroupCreateResp, error) {
 	client := social.NewSocialClient(m.cli.Conn())
 	return client.GroupCreate(ctx, in, opts...)

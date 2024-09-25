@@ -41,7 +41,6 @@ type SocialClient interface {
 	FriendPutInHandle(ctx context.Context, in *FriendPutInHandleReq, opts ...grpc.CallOption) (*FriendPutInHandleResp, error)
 	FriendPutInList(ctx context.Context, in *FriendPutInListReq, opts ...grpc.CallOption) (*FriendPutInListResp, error)
 	FriendList(ctx context.Context, in *FriendListReq, opts ...grpc.CallOption) (*FriendListResp, error)
-	// 群要求
 	GroupCreate(ctx context.Context, in *GroupCreateReq, opts ...grpc.CallOption) (*GroupCreateResp, error)
 	GroupPutin(ctx context.Context, in *GroupPutinReq, opts ...grpc.CallOption) (*GroupPutinResp, error)
 	GroupPutinList(ctx context.Context, in *GroupPutinListReq, opts ...grpc.CallOption) (*GroupPutinListResp, error)
@@ -168,7 +167,6 @@ type SocialServer interface {
 	FriendPutInHandle(context.Context, *FriendPutInHandleReq) (*FriendPutInHandleResp, error)
 	FriendPutInList(context.Context, *FriendPutInListReq) (*FriendPutInListResp, error)
 	FriendList(context.Context, *FriendListReq) (*FriendListResp, error)
-	// 群要求
 	GroupCreate(context.Context, *GroupCreateReq) (*GroupCreateResp, error)
 	GroupPutin(context.Context, *GroupPutinReq) (*GroupPutinResp, error)
 	GroupPutinList(context.Context, *GroupPutinListReq) (*GroupPutinListResp, error)

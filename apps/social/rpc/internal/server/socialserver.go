@@ -42,7 +42,6 @@ func (s *SocialServer) FriendList(ctx context.Context, in *social.FriendListReq)
 	return l.FriendList(in)
 }
 
-// 群要求
 func (s *SocialServer) GroupCreate(ctx context.Context, in *social.GroupCreateReq) (*social.GroupCreateResp, error) {
 	l := logic.NewGroupCreateLogic(ctx, s.svcCtx)
 	return l.GroupCreate(in)
