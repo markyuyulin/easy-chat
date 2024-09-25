@@ -1,8 +1,15 @@
 need_start_server_shell=(
-  #rpc
+  #user-rpc
   user-rpc-test.sh
 
-  #api
+  #user-api
+  user-api-test.sh
+
+  #social-rpc
+  social-rpc-test.sh
+
+  #social-api
+  social-api-test.sh
 )
 
 for i in ${need_start_server_shell[*]} ; do
