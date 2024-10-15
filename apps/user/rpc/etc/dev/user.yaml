@@ -13,6 +13,12 @@ Cache:
     Type: node
     Pass: easy-chat
 
+Redisx:
+  Host: 192.168.159.131:16379
+  Type: node
+  Pass: easy-chat
+
+
 Jwt:
   AccessSecret: imooc.com
   AccessExpire: 8640000

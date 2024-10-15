@@ -19,4 +19,15 @@ type (
 		SendTime           int64  `mapstructure:"sendTime"`
 		Msg                `mapstructure:"msg"`
 	}
+	//消息推送到kafka中的消息结构
+	Push struct {
+		ConversationId     string `mapstructure:"conversationId"`
+		constants.ChatType `mapstructure:"chatType"`
+		SendId             string `mapstructure:"sendId"`
+		RecvId             string `mapstructure:"recvId"`
+		SendTime           int64  `mapstructure:"sendTime"`
+
+		constants.MType `mapstructure:"mType"`
+		Content         string `mapstructure:"content"`
+	}
 )

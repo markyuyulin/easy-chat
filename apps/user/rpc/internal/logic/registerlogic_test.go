@@ -22,10 +22,10 @@ func TestRegisterLogic_Register(t *testing.T) {
 			name: "1",
 			args: args{
 				in: &user.RegisterReq{
-					Phone:    "18811111111",
-					Nickname: "dyl",
+					Phone:    "15364448923",
+					Nickname: "yulinD",
 					Password: "123456",
-					Avatar:   "qqq.jpg",
+					Avatar:   "dyl.jpg",
 					Sex:      0,
 				},
 			},
